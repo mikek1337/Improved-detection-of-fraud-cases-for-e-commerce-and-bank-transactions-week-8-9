@@ -20,8 +20,8 @@ def plot_histogram(df:pd.DataFrame,cols:list[str], top_n:int=20):
      # Calculate grid dimensions: roughly square layout
     num_rows = int(num_plots**0.5)
     num_cols = (num_plots + num_rows - 1)
-    plt.figure(figsize=(num_cols * 5, num_rows * 4))
     for i, col in enumerate(cols):
+        plt.figure(figsize=(num_cols * 5, num_rows * 4))
         ax = plt.subplot(num_rows, num_cols, i + 1) # Create a subplot for each plot
         
         if pd.api.types.is_numeric_dtype(df[col]):
@@ -52,8 +52,8 @@ def plot_histogram(df:pd.DataFrame,cols:list[str], top_n:int=20):
             ax.tick_params(axis='y', which='major', labelsize=7)
             plt.xticks(rotation=45, ha='right', fontsize=7)
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
 def calculate_correlations(df, method='all'):
     """
