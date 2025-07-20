@@ -9,10 +9,50 @@ from imblearn.over_sampling import SMOTE
 
 # --- 1. Custom Transformer for Time-Based and Frequency/Velocity Features ---
 class CustomFeatureEngineer(BaseEstimator, TransformerMixin):
+    """
+    A custom scikit-learn transformer for engineering time-based, frequency,
+    and velocity features from transactional data.
+
+    This transformer calculates:
+    - `time_since_signup`: The duration in seconds between a user's signup and purchase.
+    - `hour_of_day`: The hour at which a purchase was made.
+    - `day_of_week`: The day of the week a purchase was made.
+    - `transaction_frequency`: The total number of transactions for each user.
+    - `avg_time_between_transactions_seconds`: The average time difference in seconds
+      between consecutive transactions for each user.
+
+    Attributes:
+        avg_time_between_transactions_ (pd.Series): Stores the average time between
+            transactions for each user, learned during the fit method.
+        user_transaction_frequency_ (pd.Series): Stores the frequency of transactions
+            for each user, learned during the fit method.
+    """
     def __init__(self):
+        """
+        Initializes the CustomFeatureEngineer.
+        No parameters are required at initialization.
+        """
         pass
 
     def fit(self, X, y=None):
+        """
+        Fits the transformer by calculating user-specific statistics from the training data.
+
+        This method calculates:
+        - The average time between transactions for each user.
+        - The total transaction frequency for each user.
+
+        These statistics are stored as attributes to be used during the transform phase
+        on both training and test datasets.
+
+        Args:
+            X (pd.DataFrame): The input DataFrame containing 'user_id', 'purchase_time',
+                              and 'signup_time' columns.
+            y (pd.Series, optional): Ignored. Present for scikit-learn API compatibility.
+
+        Returns:
+            self: The fitted transformer instance.
+        """
         # We need to calculate the average time between transactions based on the training data's user_ids
         # to handle cases where users only have one transaction in the training set
         temp_df = X.copy()
@@ -34,6 +74,21 @@ class CustomFeatureEngineer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
+        """
+        Transforms the input DataFrame by adding engineered features.
+
+        This method applies the calculations for time-based features and maps
+        the user-specific statistics (frequency and average time between transactions)
+        learned during the `fit` phase to the input data.
+
+        Args:
+            X (pd.DataFrame): The input DataFrame containing 'user_id', 'purchase_time',
+                              and 'signup_time' columns.
+            y (pd.Series, optional): Ignored. Present for scikit-learn API compatibility.
+
+        Returns:
+            pd.DataFrame: The DataFrame with new engineered features added.
+        """
         X_transformed = X.copy()
 
         # Ensure timestamp columns are datetime objects
@@ -68,7 +123,24 @@ class CustomFeatureEngineer(BaseEstimator, TransformerMixin):
 
 
 def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols):
+    """
+    Processes the fraud detection dataset by performing feature engineering,
+    data splitting, preprocessing (scaling and one-hot encoding), and
+    handling class imbalance using SMOTE.
 
+    Args:
+        fraud_data (pd.DataFrame): The input DataFrame containing the fraud data.
+                                   Expected to have 'purchase_time', 'signup_time',
+                                   'user_id', 'class' and other numerical/categorical columns.
+        numerical_cols (list): A list of column names that are numerical features.
+        categorical_cols (list): A list of column names that are categorical features.
+
+    Returns:
+        dict: A dictionary containing the processed training and testing datasets:
+              - 'x_train': Processed training features (pd.DataFrame).
+              - 'y_train': Training target labels (pd.Series), resampled by SMOTE.
+              - 'x_test': Processed testing features (pd.DataFrame).
+    """
     # --- 3. Define Features (X) and Target (y) ---
     # Make sure to include all columns that will be processed by the pipeline
     # Keep original time columns for CustomFeatureEngineer to process
