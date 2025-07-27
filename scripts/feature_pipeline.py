@@ -244,3 +244,7 @@ def credit_pipeline(final_numerical_cols:list[str],final_categorical_cols:list[s
     ])
 
     return feature_engineering_pipeline
+
+def test_featureengineering(numerical_cols:list[str], categorical_cols:list[str]):
+    pipeline = fraud_pipeline(numerical_cols,categorical_cols)
+    return pipeline
