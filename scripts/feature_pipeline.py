@@ -212,6 +212,28 @@ def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols, pip
     return {'x_train':X_train_resampled, 'y_train': y_train_resampled, 'x_test':X_test_processed, 'y_test': y_test}
 
 def fraud_pipeline(final_numerical_cols:list[str], final_categorical_cols:list[str]):
+    """
+    Creates and returns a scikit-learn Pipeline specifically designed for fraud detection
+    feature engineering and preprocessing.
+
+    This pipeline includes:
+    1. A custom feature engineering step (`CustomFeatureEngineerForFraud`) to derive
+       domain-specific features (e.g., time-based, frequency).
+    2. A `ColumnTransformer` for standard preprocessing tasks:
+       - `StandardScaler` for numerical features.
+       - `MinMaxScaler` for numerical features (applied to the same set, which might be
+         redundant or intended for specific features if `final_numerical_cols` is split).
+       - `OneHotEncoder` for categorical features.
+
+    Args:
+        final_numerical_cols (list[str]): A list of column names that should be treated
+                                          as numerical features for scaling.
+        final_categorical_cols (list[str]): A list of column names that should be treated
+                                            as categorical features for one-hot encoding.
+
+    Returns:
+        Pipeline: A scikit-learn Pipeline object ready to be fitted and transformed.
+    """
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), final_numerical_cols),
@@ -230,6 +252,23 @@ def fraud_pipeline(final_numerical_cols:list[str], final_categorical_cols:list[s
     return feature_engineering_pipeline
 
 def credit_pipeline(final_numerical_cols:list[str],final_categorical_cols:list[str]):
+    """
+    Creates and returns a scikit-learn Pipeline for credit data preprocessing.
+
+    This pipeline is simpler than the fraud pipeline as it does not include a
+    custom feature engineering step. It focuses solely on standard preprocessing:
+    - `StandardScaler` for numerical features.
+    - `OneHotEncoder` for categorical features.
+
+    Args:
+        final_numerical_cols (list[str]): A list of column names that should be treated
+                                          as numerical features for scaling.
+        final_categorical_cols (list[str]): A list of column names that should be treated
+                                            as categorical features for one-hot encoding.
+
+    Returns:
+        Pipeline: A scikit-learn Pipeline object ready to be fitted and transformed.
+    """
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), final_numerical_cols),
@@ -246,5 +285,20 @@ def credit_pipeline(final_numerical_cols:list[str],final_categorical_cols:list[s
     return feature_engineering_pipeline
 
 def test_featureengineering(numerical_cols:list[str], categorical_cols:list[str]):
+    """
+    A utility function to create a fraud detection feature engineering pipeline,
+    primarily intended for testing or demonstration purposes.
+
+    This function simply calls `fraud_pipeline` with the provided numerical and
+    categorical column lists.
+
+    Args:
+        numerical_cols (list[str]): A list of column names that are numerical features.
+        categorical_cols (list[str]): A list of column names that are categorical features.
+
+    Returns:
+        Pipeline: A scikit-learn Pipeline object configured for fraud detection
+                  feature engineering and preprocessing.
+    """
     pipeline = fraud_pipeline(numerical_cols,categorical_cols)
     return pipeline
