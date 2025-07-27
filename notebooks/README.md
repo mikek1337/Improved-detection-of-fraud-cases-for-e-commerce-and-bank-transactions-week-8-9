@@ -17,6 +17,8 @@ This notebook `EDA.ipynb` (Exploratory Data Analysis) is designed to perform a c
 6. [Multivariate Analysis](https://www.google.com/search?q=%236-multivariate-analysis "null")
     
 7. [Feature Engineering Pipeline](https://www.google.com/search?q=%237-feature-engineering-pipeline "null")
+
+8. [Model Training]
     
 
 ## 1. Setup and Imports

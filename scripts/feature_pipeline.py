@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
+from typing import Callable
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 
 # --- 1. Custom Transformer for Time-Based and Frequency/Velocity Features ---
-class CustomFeatureEngineer(BaseEstimator, TransformerMixin):
+class CustomFeatureEngineerForFraud(BaseEstimator, TransformerMixin):
     """
     A custom scikit-learn transformer for engineering time-based, frequency,
     and velocity features from transactional data.
@@ -122,7 +123,7 @@ class CustomFeatureEngineer(BaseEstimator, TransformerMixin):
 
 
 
-def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols):
+def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols, pipeline:Callable[[list[str],list[str]], Pipeline], target_col:str='class'):
     """
     Processes the fraud detection dataset by performing feature engineering,
     data splitting, preprocessing (scaling and one-hot encoding), and
@@ -146,7 +147,7 @@ def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols):
     # Keep original time columns for CustomFeatureEngineer to process
     feature_cols = numerical_cols + categorical_cols
     print(feature_cols)
-    target_col = 'class'
+
 
     X = fraud_data[feature_cols]
     y = fraud_data[target_col]
@@ -166,19 +167,7 @@ def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols):
     # --- 5. Create the Preprocessing Pipeline ---
 
     # Define the preprocessor using ColumnTransformer for numerical and categorical features
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), final_numerical_cols),
-            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=7), final_categorical_cols)
-        ],
-        remainder='passthrough' # Keep other columns (like 'user_id' if not used in model)
-    )
-
-    # Combine CustomFeatureEngineer and the preprocessor into a main pipeline
-    feature_engineering_pipeline = Pipeline(steps=[
-        ('custom_features', CustomFeatureEngineer()),
-        ('preprocessor', preprocessor)
-    ])
+    feature_engineering_pipeline = pipeline(final_numerical_cols, final_categorical_cols)
 
     # --- 6. Apply the Pipeline to Training Data ---
     X_train_processed = feature_engineering_pipeline.fit_transform(X_train, y_train)
@@ -220,5 +209,38 @@ def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols):
     print(y_train_resampled.value_counts(normalize=True) * 100)
     print("-" * 50)
     print("\nFeature Engineering Pipeline successfully created and applied. Data is ready for model training. ✨")
-    return {'x_train':X_train_resampled, 'y_train': y_train_resampled, 'x_test':X_test_processed}
+    return {'x_train':X_train_resampled, 'y_train': y_train_resampled, 'x_test':X_test_processed, 'y_test': y_test}
 
+def fraud_pipeline(final_numerical_cols:list[str], final_categorical_cols:list[str]):
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', StandardScaler(), final_numerical_cols),
+            ('minmax', MinMaxScaler(), final_numerical_cols),
+            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=7), final_categorical_cols)
+        ],
+        remainder='passthrough' # Keep other columns (like 'user_id' if not used in model)
+    )
+
+    # Combine CustomFeatureEngineer and the preprocessor into a main pipeline
+    feature_engineering_pipeline = Pipeline(steps=[
+        ('custom_features', CustomFeatureEngineerForFraud()),
+        ('preprocessor', preprocessor)
+    ])
+
+    return feature_engineering_pipeline
+
+def credit_pipeline(final_numerical_cols:list[str],final_categorical_cols:list[str]):
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', StandardScaler(), final_numerical_cols),
+            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=7), final_categorical_cols)
+        ],
+        remainder='passthrough' # Keep other columns (like 'user_id' if not used in model)
+    )
+
+    # Combine CustomFeatureEngineer and the preprocessor into a main pipeline
+    feature_engineering_pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor)
+    ])
+
+    return feature_engineering_pipeline
