@@ -209,7 +209,7 @@ def process_frude(fraud_data:pd.DataFrame, numerical_cols, categorical_cols, pip
     print(y_train_resampled.value_counts(normalize=True) * 100)
     print("-" * 50)
     print("\nFeature Engineering Pipeline successfully created and applied. Data is ready for model training. ✨")
-    return {'x_train':X_train_resampled, 'y_train': y_train_resampled, 'x_test':X_test_processed, 'y_test': y_test}
+    return {'x_train':X_train_resampled, 'y_train': y_train_resampled, 'x_test':X_test_processed, 'y_test': y_test, 'x_test_processed_df':X_test_processed_df, 'x_train_processed_df':X_train_processed_df}
 
 def fraud_pipeline(final_numerical_cols:list[str], final_categorical_cols:list[str]):
     """
@@ -234,11 +234,13 @@ def fraud_pipeline(final_numerical_cols:list[str], final_categorical_cols:list[s
     Returns:
         Pipeline: A scikit-learn Pipeline object ready to be fitted and transformed.
     """
+    drop_columns = ['purchase_time', 'signup_time', 'user_id', 'device_id']
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), final_numerical_cols),
             ('minmax', MinMaxScaler(), final_numerical_cols),
-            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=7), final_categorical_cols)
+            ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, max_categories=7), final_categorical_cols),
+            ('drop_ids', 'drop', drop_columns)
         ],
         remainder='passthrough' # Keep other columns (like 'user_id' if not used in model)
     )

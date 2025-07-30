@@ -6,7 +6,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score,roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score,roc_auc_score, average_precision_score
+from evaluation import summary_plot, lr_shap
 class TrainModel:
     def __init__(self, feat_data):
         mlflow.set_tracking_uri(uri='http://127.0.0.1:8080')
@@ -18,6 +19,9 @@ class TrainModel:
         # print(self.data.columns)
         # x = self.data.drop('remainder__is_high_risk', axis=1)
         # y = self.data['remainder__is_high_risk']
+        self.lr_model = None
+        self.gmb_model = None
+        self.tree = None
         self.train_setup= feat_data
 
     def train_linear(self, params):
@@ -87,6 +91,11 @@ class TrainModel:
         gbm_model = self.train_gbm(gbm_params)
         gbm_metrics = self.metrics(gbm_model)
         self.logging(gbm_model, gbm_metrics,'GBM', gbm_params, log_name)
+        self.lr_model = lr_model
+        self.gmb_model = gbm_model
+        self.tree = tree_model
+        
+        
 
     def logging(self,model, metrics, experiment_name, params, model_name):
         mlflow.set_experiment(experiment_name)
@@ -99,13 +108,25 @@ class TrainModel:
                 name=model_name,
                 signature=signature,
                 input_example=self.train_setup['x_train'],
-                registered_model_name=f'tracking-{model_name}'
+                registered_model_name=f'tracking-{model_name}-{experiment_name}'
+            )
+            model_uri = mlflow.get_artifact_uri(model_name)
+            evaldata = self.train_setup['x_test'].copy()
+            # evaldata['class'] = self.train_setup['y_test']
+            result = mlflow.models.evaluate(
+                model_uri,
+                evaldata,
+                targets="class",
+                model_type="classifier",
+                evaluators=["default"]
             )
             mlflow.set_logged_model_tags(
                 model_info.model_id, {"Training Info":"Basic info"}
             )
 
-
+    def shap_local(self):
+        summary_plot(self.lr_model, lr_shap, self.train_setup['x_train'])        
+        
 
 if __name__ == '__main__':
     train = TrainModel()
